@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum vehicles_tax_status_enum {
+  No
+  Yes
+  Pending
+}
+
+enum vehicles_halfcut_status_enum {
+  Complete
+  Halfcut
+  Dismantled
+}
+
+enum vehicles_load_status_enum {
+  Pending
+  Loaded
+  In_Transit
+  Delivered
+}
+
+enum vehicles_load_halfcut_status_enum {
+  NotApplicable
+  Complete
+  Incomplete
+}
+
+enum vehicles_title_tracking_enum {
+  NotStarted
+  InProgress
+  Completed
+  Delivered
+}
+
+enum vehicles_inspection_enum {
+  NotInspected
+  Inspected
+  Failed
+}
+
+enum vehicle_dispatch_type {
+  dispatch
+  non_dispatch
+}
+
+model vehicles {
+  id                            Int      @id @default(autoincrement())
+  vin                           String?  @unique @db.VarChar(255)
+  lot_number                    String?  @db.VarChar(255)
+  year                          String?  @db.VarChar(128)
+  make                          String?  @db.VarChar(255)
+  model                         String?  @db.VarChar(255)
+  price                         Int?     @default(0)
+  title_number                  String?  @db.VarChar(255)
+  color                         String?  @db.VarChar(128)
+  isPendingTrash                Boolean  @default(false)
+  is_scrap                      Boolean  @default(false)
+  tax_status                    vehicles_tax_status_enum @default(No)
+  load_status                   vehicles_load_status_enum?
+  inspection                    vehicles_inspection_enum?
+  created_at                    DateTime @default(now())
+  updated_at                    DateTime @updatedAt
+  customer_remark               String?
+
+  // Relations
+  company_id                    Int?
+  customer_id                   Int?
+
+  companies   companies? @relation(fields: [company_id], references: [id], onUpdate: NoAction)
+  customers   customers? @relation(fields: [customer_id], references: [id], onUpdate: NoAction)
+
+  // Additional vehicle-related fields
+  title_status_step_two        String?  @db.VarChar(255)
+  last_title_follow_up_date    DateTime? @default(now()) @db.Date
+  title_receive_date           DateTime? @default(now()) @db.Date
+
+  @@index([vin])
+  @@index([company_id])
+  @@index([customer_id])
+}
+
+model companies {
+  id        Int        @id @default(autoincrement())
+  name      String
+  address   String?
+  contact   String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  vehicles  vehicles[] // Add this line to create the reverse relation
+}
+
+model customers {
+  id        Int        @id @default(autoincrement())
+  name      String
+  email     String     @unique
+  phone     String?
+  vehicles  vehicles[]
+}
+
+model User {
+  id       Int      @id @default(autoincrement())
+  name     String
+  email    String   @unique
+  password String
+  profile   Profile?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Profile {
+  id        Int      @id @default(autoincrement())
+  name      String
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int      @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
